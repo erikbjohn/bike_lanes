@@ -58,7 +58,7 @@ else :
     np.save(sat21_path, images)
     print("\n image conversion to 224 complete")
 
-split = train_test_split(df, images, test_size=0.20, random_state=42)
+split = train_test_split(df, images, test_size=0.10, random_state=42)
 
 print('Split complete')
 (train_df, test_df, train_imgs, test_imgs) = split
@@ -87,8 +87,8 @@ model.compile(loss="mse", optimizer=opt)
 
 checkpoint_cb = ModelCheckpoint(model_path, save_best_only=True)
 history = model.fit(train_imgs, trainY,
-                    epochs=50,
-                    batch_size=10,
+                    epochs=250,
+                    batch_size=5,
                     validation_data=(test_imgs, testY),
                     callbacks=[checkpoint_cb])
 
