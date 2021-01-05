@@ -77,8 +77,8 @@ for layer in vgg.layers:
     # print(layer, layer.trainable)
 
 flat1 = Flatten()(vgg.output)
-feat1 = Dense(24, activation="relu")(flat1)
-drop1 = Dropout(0.3)(feat1)
+feat1 = Dense(48, activation="relu")(flat1)
+drop1 = Dropout(0.5)(feat1)
 output = Dense(1, activation="linear")(drop1)
 model = Model(inputs=vgg.inputs, outputs=output)
 model.summary()
@@ -88,7 +88,7 @@ model.compile(loss="mse", optimizer=opt)
 checkpoint_cb = ModelCheckpoint(model_path, save_best_only=True)
 history = model.fit(train_imgs, trainY,
                     epochs=200,
-                    batch_size=30,
+                    batch_size=32,
                     validation_data=(test_imgs, testY),
                     callbacks=[checkpoint_cb])
 

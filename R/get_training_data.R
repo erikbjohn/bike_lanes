@@ -33,9 +33,15 @@ get_training_data <- function(){
   dt_flist <- dt_flist[, location_id:=stringr::str_extract(fname, '(?<=locationid\\_).+(?=\\_sat\\_zoom)')]
   setnames(training_places, 'RoadWidth(ft)', 'width')
   training_places <- training_places[, .(location_id, width)]
+  training_places_ej <- readRDS('~/Dropbox/pkg.data/bike_lanes/data/raw/training_places_ej.rds')
+  training_places_ej <- training_places_ej[, .(location_id, width)]
+  training_places_ej <- training_places_ej[, location_id:=stringr::str_replace(location_id, '\\_ej\\_', '')]
+  training_places <- rbindlist(list(training_places, training_places_ej), use.names = TRUE)
+  
   setkey(training_places, location_id)
   setkey(dt_flist, location_id)
   dt_flist <- training_places[dt_flist]
   dt_flist <- dt_flist[!is.na(fname)]
+  dt_flist <- dt_flist[!is.na(width)]
   fwrite(dt_flist, '~/Dropbox/pkg.data/bike_lanes/data/clean/df_training.csv')
 }
