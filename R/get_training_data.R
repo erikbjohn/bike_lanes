@@ -23,6 +23,7 @@ get_training_data <- function(){
                    '&key=', api.key)
     fDest_sat <- paste0( training_data_location, 'locationid_', location_id, '_sat_zoom_', zoom_level, '.png')
     download.file(gloc, destfile=fDest_sat)
+
   }
   
   # Create df for python
@@ -34,6 +35,7 @@ get_training_data <- function(){
   training_places <- training_places[, .(location_id, width)]
   setkey(training_places, location_id)
   setkey(dt_flist, location_id)
-  dt_flist <- dt_flist[training_places]
+  dt_flist <- training_places[dt_flist]
+  dt_flist <- dt_flist[!is.na(fname)]
   fwrite(dt_flist, '~/Dropbox/pkg.data/bike_lanes/data/clean/df_training.csv')
 }

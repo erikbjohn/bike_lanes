@@ -58,7 +58,7 @@ else :
     np.save(sat21_path, images)
     print("\n image conversion to 224 complete")
 
-split = train_test_split(df, images, test_size=0.10, random_state=42)
+split = train_test_split(df, images, test_size=0.20, random_state=5)
 
 print('Split complete')
 (train_df, test_df, train_imgs, test_imgs) = split
@@ -77,8 +77,8 @@ for layer in vgg.layers:
     # print(layer, layer.trainable)
 
 flat1 = Flatten()(vgg.output)
-feat1 = Dense(32, activation="relu")(flat1)
-drop1 = Dropout(0.25)(feat1)
+feat1 = Dense(24, activation="relu")(flat1)
+drop1 = Dropout(0.3)(feat1)
 output = Dense(1, activation="linear")(drop1)
 model = Model(inputs=vgg.inputs, outputs=output)
 model.summary()
@@ -87,8 +87,8 @@ model.compile(loss="mse", optimizer=opt)
 
 checkpoint_cb = ModelCheckpoint(model_path, save_best_only=True)
 history = model.fit(train_imgs, trainY,
-                    epochs=250,
-                    batch_size=5,
+                    epochs=200,
+                    batch_size=30,
                     validation_data=(test_imgs, testY),
                     callbacks=[checkpoint_cb])
 
@@ -100,11 +100,11 @@ train_save_location = os.path.sep.join([predictions_output_path, 'training_predi
 pd_dataset_train = pd.DataFrame({'locationid': train_df['location_id'],
                            'actual_width': train_df['width'],
                           'predicted_width': cs.inverse_transform(trainPreds).reshape(-1)})
-pd_dataset.to_csv(train_save_location, index=False)
+pd_dataset_train.to_csv(train_save_location, index=False)
 
 testPreds = model.predict(test_imgs)
 test_save_location = os.path.sep.join([predictions_output_path, 'testing_predictions.csv'])
 pd_dataset_test = pd.DataFrame({'locationid': test_df['location_id'],
                            'actual_width': test_df['width'],
                           'predicted_width': cs.inverse_transform(testPreds).reshape(-1)})
-pd_dataset.to_csv(test_save_location, index=False)
+pd_dataset_test.to_csv(test_save_location, index=False)

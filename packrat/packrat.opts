@@ -8,6 +8,7 @@ external.packages:
     stringr
     lubridate
     readxl
+    adimpro
 local.repos: 
 load.external.packages.on.startup: TRUE
 ignored.packages: 
