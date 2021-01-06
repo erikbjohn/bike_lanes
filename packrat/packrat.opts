@@ -9,6 +9,8 @@ external.packages:
     lubridate
     readxl
     ggplot2
+    rgdal
+    sp
 local.repos: 
 load.external.packages.on.startup: TRUE
 ignored.packages: 

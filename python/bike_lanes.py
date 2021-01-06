@@ -1,3 +1,5 @@
+from typing import List
+
 from tensorflow.keras.models import Model, load_model, Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Dropout, concatenate, Input, Reshape, Flatten, GlobalAveragePooling2D
@@ -30,6 +32,7 @@ pic_processed_path = os.path.dirname("/home/ebjohnson5/Dropbox/pkg.data/bike_lan
 tensor_model_path = os.path.dirname('/home/ebjohnson5/Dropbox/pkg.data/bike_lanes/models/')
 training_csv_path = '/home/ebjohnson5/Dropbox/pkg.data/bike_lanes/data/clean/df_training.csv'
 sat21_path = '/home/ebjohnson5/Dropbox/pkg.data/bike_lanes/data/clean/sat21.npy'
+university_blvd_path = '/home/ebjohnson5/Dropbox/pkg.data/bike_lanes/data/clean/university_blvd.npy'
 model_path = '/home/ebjohnson5/Dropbox/pkg.data/bike_lanes/models/first_model.h5'
 
 print("\n[[[ CHECKING AND PREPROCESSING NEW IMAGES ]]]\n")
@@ -69,31 +72,30 @@ cs= MinMaxScaler()
 trainY = cs.fit_transform(trainY)
 testY = cs.transform(testY)
 
-vgg = VGG16(include_top=False, input_shape=(224, 244, 3), pooling='avg')
-for layer in vgg.layers:
-    layer.trainable = False
-    # Check the trainable status of the individual layers
-    # for layer in vgg.layers:
-    # print(layer, layer.trainable)
+if os.path.exists(model_path):
+    print("\n   ", model_path, "FOUND, LOADING SAVED WEIGHTS \n")
+    model = load_model(model_path)
+else:
+    vgg = VGG16(include_top=False, input_shape=(224, 244, 3), pooling='avg')
+    for layer in vgg.layers:
+        layer.trainable = False
+        # Check the trainable status of the individual layers
+        # for layer in vgg.layers:
+        # print(layer, layer.trainable)
+    flat1 = Flatten()(vgg.output)
+    feat1 = Dense(48, activation="relu")(flat1)
+    drop1 = Dropout(0.4)(feat1)
+    output = Dense(1, activation="linear")(drop1)
+    model = Model(inputs=vgg.inputs, outputs=output)
+    model.summary()
+    #opt = Adam(lr=1e-3, decay=1e-6, clipnorm=1.0, clipvalue=0.5)
+    opt = Adam(lr=1e-3, decay=1e-6)
+    model.compile(loss="mse", optimizer=opt)
 
-flat1 = Flatten()(vgg.output)
-feat1 = Dense(48, activation="relu")(flat1)
-drop1 = Dropout(0.4)(feat1)
-output = Dense(1, activation="linear")(drop1)
-model = Model(inputs=vgg.inputs, outputs=output)
-model.summary()
-#opt = Adam(lr=1e-3, decay=1e-6, clipnorm=1.0, clipvalue=0.5)
-opt = Adam(lr=1e-3, decay=1e-6)
-model.compile(loss="mse", optimizer=opt)
+    checkpoint_cb = ModelCheckpoint(model_path, save_best_only=True)
+    history = model.fit(train_imgs, trainY, epochs=500, batch_size=16, validation_data=(test_imgs, testY), callbacks=[checkpoint_cb])
 
-checkpoint_cb = ModelCheckpoint(model_path, save_best_only=True)
-history = model.fit(train_imgs, trainY,
-                    epochs=500,
-                    batch_size=16,
-                    validation_data=(test_imgs, testY),
-                    callbacks=[checkpoint_cb])
-
-print('model calibration done')
+    print('model calibration done')
 
 predictions_output_path = os.path.dirname('/home/ebjohnson5/Documents/Github/bike_lanes/predictions/')
 trainPreds = model.predict(train_imgs)
@@ -109,3 +111,28 @@ pd_dataset_test = pd.DataFrame({'locationid': test_df['location_id'],
                            'actual_width': test_df['width'],
                           'predicted_width': cs.inverse_transform(testPreds).reshape(-1)})
 pd_dataset_test.to_csv(test_save_location, index=False)
+
+# Check out how model predicts on University BLVD
+university_blvd_raw_path = os.path.dirname("/home/ebjohnson5/Dropbox/pkg.data/bike_lanes/data/raw/university_blvd_snapshots/")
+university_blvd_np_path = "/home/ebjohnson5/Dropbox/pkg.data/bike_lanes/data/clean/university_blvd_snapshots.npy"
+onlyfiles: List[str] = [f for f in os.listdir(university_blvd_raw_path) if os.path.isfile(os.path.join(university_blvd_raw_path, f))]
+if os.path.isfile(university_blvd_np_path):
+    university_blvd_images = np.load(university_blvd_np_path)
+else:
+
+    university_blvd_images = []
+    for file in onlyfiles:
+        file_path = university_blvd_raw_path + '/' + file
+        image = cv2.imread(file_path)
+        image = cv2.resize(image, (224, 224))
+        image = image / 255.0
+        university_blvd_images.append(image)
+    np.save(university_blvd_np_path, university_blvd_images)
+    university_blvd_images = np.load(university_blvd_np_path)
+
+university_blvd_predictions = model.predict(university_blvd_images)
+university_blvd_save_location = os.path.sep.join([predictions_output_path, 'university_blvd_predictions.csv'])
+pd_university_blvd_predictions = pd.DataFrame({'fname': onlyfiles,
+                                               'predicted_width': cs.inverse_transform(university_blvd_predictions).reshape(-1)})
+pd_university_blvd_predictions.to_csv(university_blvd_save_location, index=False)
+
