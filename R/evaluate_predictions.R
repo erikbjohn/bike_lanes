@@ -20,4 +20,6 @@ evaluate_predictions <- function(){
     geom_abline(slope=1, intercept=0) +
     ggtitle('Testing Data')
   
+  ggsave('test_data_predictions.png')
+  
 }
