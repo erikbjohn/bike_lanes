@@ -1,4 +1,6 @@
 sample_roads_points <- function(x, sdist=100){
+  #sample_roads_points_location <- '~/Dropbox/pkg.data/bike_lanes/data/clean/sample_roads_points.rds'
+  #if(!file.exists(sample_roads_points_location)){
   if (!require(sp)) stop("sp PACKAGE MISSING")
   if (!inherits(x, "SpatialLinesDataFrame")) stop("MUST BE SP SpatialLinesDataFrame OBJECT")
   lgth <- SpatialLinesLengths(x) 
@@ -11,6 +13,9 @@ sample_roads_points <- function(x, sdist=100){
   coords.return <- results@coords
   } else {
     coords.return <- c(NA,NA)
+  #}
+  #} else {
+    
   }
   return(coords.return)
 }
